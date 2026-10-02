@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Page not found — CrucibleVM</title>
+	<meta name="robots" content="noindex">
+	<link rel="icon" type="image/svg+xml" href="/assets/branding/logo-mark.svg">
+	<link rel="icon" href="/favicon.ico" sizes="32x32">
+	<link rel="stylesheet" href="/assets/css/main.css">
+	<script>
+		(function () {
+			try {
+				var s = localStorage.getItem("cruciblevm-color-scheme");
+				if (s === "light" || s === "dark") document.documentElement.dataset.theme = s;
+			} catch (e) {}
+		})();
+	</script>
+	<script src="/assets/js/theme.js" defer></script>
+</head>
+<body>
+	<button class="theme-toggle" id="theme-toggle" type="button" hidden>
+		<svg class="icon-system" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M 12 3 a 9 9 0 0 1 0 18 Z" fill="currentColor" stroke="none"/></svg>
+		<svg class="icon-light" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+		<svg class="icon-dark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+	</button>
+	<header class="hero">
+		<a href="/"><img class="hero-logo" src="/assets/branding/logo-mark.svg" alt="CrucibleVM" width="120" height="120"></a>
+		<h1 class="hero-title">404</h1>
+		<p class="hero-tagline">Page not found.</p>
+		<p class="hero-intro">Nothing was recorded at this path.</p>
+		<p class="hero-links"><a class="button" href="/">Back to cruciblevm.github.io</a></p>
+	</header>
+</body>
+</html>
