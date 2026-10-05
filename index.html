@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>CrucibleVM — Open-source PGO for GraalVM native-image</title>
+	<meta name="description" content="CrucibleVM is a fork of GraalVM Community Edition that adds open-source profile-guided optimization to native-image. Alpha.">
+	<link rel="canonical" href="https://cruciblevm.github.io/">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="CrucibleVM">
+	<meta property="og:title" content="CrucibleVM">
+	<meta property="og:description" content="Open-source profile-guided optimization for GraalVM Community Edition native-image.">
+	<meta property="og:url" content="https://cruciblevm.github.io/">
+	<meta property="og:image" content="https://cruciblevm.github.io/assets/og-banner.png">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta property="og:image:alt" content="CrucibleVM — open-source profile-guided optimization for native-image.">
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title" content="CrucibleVM">
+	<meta name="twitter:description" content="Open-source profile-guided optimization for GraalVM Community Edition native-image.">
+	<meta name="twitter:image" content="https://cruciblevm.github.io/assets/og-banner.png">
+	<meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)">
+	<meta name="theme-color" content="#0f131c" media="(prefers-color-scheme: dark)">
+	<link rel="icon" type="image/svg+xml" href="assets/branding/logo-mark.svg">
+	<link rel="icon" href="favicon.ico" sizes="32x32">
+	<link rel="icon" type="image/png" href="assets/favicon-16x16.png" sizes="16x16">
+	<link rel="icon" type="image/png" href="assets/favicon-32x32.png" sizes="32x32">
+	<link rel="icon" type="image/png" href="assets/android-chrome-192x192.png" sizes="192x192">
+	<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+	<link rel="mask-icon" href="assets/branding/logo-mark-mono.svg" color="#44557a">
+	<link rel="manifest" href="site.webmanifest">
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "SoftwareSourceCode",
+		"name": "CrucibleVM",
+		"description": "Open-source profile-guided optimization for GraalVM Community Edition native-image.",
+		"url": "https://cruciblevm.github.io/",
+		"codeRepository": "https://github.com/SiteNetSoft/crucible",
+		"license": "https://openjdk.org/legal/gplv2+ce.html",
+		"programmingLanguage": "Java"
+	}
+	</script>
+	<link rel="stylesheet" href="assets/css/main.css">
+	<script>
+		(function () {
+			try {
+				var s = localStorage.getItem("cruciblevm-color-scheme");
+				if (s === "light" || s === "dark") document.documentElement.dataset.theme = s;
+			} catch (e) {}
+		})();
+	</script>
+	<script src="assets/js/theme.js" defer></script>
+</head>
+<body>
+	<button class="theme-toggle" id="theme-toggle" type="button" hidden>
+		<svg class="icon-system" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M 12 3 a 9 9 0 0 1 0 18 Z" fill="currentColor" stroke="none"/></svg>
+		<svg class="icon-light" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+		<svg class="icon-dark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+	</button>
+	<header class="hero">
+		<img class="hero-logo" src="assets/branding/logo-mark.svg" alt="" width="120" height="120">
+		<h1 class="hero-title">CrucibleVM <span class="alpha-tag">alpha</span></h1>
+		<p class="hero-tagline">Open-source profile-guided optimization for <code>native-image</code>.</p>
+		<p class="hero-intro">CrucibleVM is a fork of GraalVM Community Edition. Build your program once so that it records how it runs, run it on a workload that looks like production, and build it again with what it recorded. The second build knows which branches go which way, which methods the time is spent in, and where calls actually land — and compiles accordingly.</p>
+		<p class="hero-links">
+			<a class="button button--primary" href="https://github.com/SiteNetSoft/crucible">View on GitHub</a>
+			<a class="button" href="https://github.com/SiteNetSoft/crucible/blob/crucible/main/crucible/README.md">Read the docs</a>
+		</p>
+	</header>
+	<aside class="notice" aria-label="Alpha notice">
+		<div>
+			<p><strong>Alpha. Not ready for production.</strong> CrucibleVM changes how the compiler optimizes your program. So far it has been tested on a small set of benchmarks, checking that each one gives exactly the same output as before. It has not yet been tested on the wide range of real-world code that a production compiler must handle correctly. Options and the profile format may change without notice. Keep a build without it to compare against, and please <a href="https://github.com/SiteNetSoft/crucible/issues">report anything that miscompiles</a>.</p>
+		</div>
+	</aside>
+	<main>
+		<section class="section" aria-labelledby="usage-title">
+			<h2 class="section-title" id="usage-title">Three builds, one of them shipped</h2>
+			<p class="section-note">Everything is a <code>-H:</code> option behind <code>-H:+UnlockExperimentalVMOptions</code>.</p>
+			<ol class="steps">
+				<li class="step">
+					<div>
+						<h3>Build an image that records</h3>
+						<pre><code><span class="c">source crucible/env.sh &amp;&amp; cd substratevm</span>
+mx native-image -O3 -cp app.jar -o app-recording \
+    -H:+UnlockExperimentalVMOptions -H:+CrucibleInstrument com.example.Main</code></pre>
+					</div>
+				</li>
+				<li class="step">
+					<div>
+						<h3>Run it on a representative workload</h3>
+						<p>It writes <code>crucible-profile.json</code> when it exits. The recording image runs about twice as slow as normal.</p>
+						<pre><code>./app-recording &lt;the usual arguments&gt;</code></pre>
+					</div>
+				</li>
+				<li class="step">
+					<div>
+						<h3>Build the image you ship</h3>
+						<pre><code>mx native-image -O3 -cp app.jar -o app \
+    -H:+UnlockExperimentalVMOptions -H:CrucibleProfile=crucible-profile.json com.example.Main</code></pre>
+					</div>
+				</li>
+			</ol>
+			<div class="after">
+				<p>The second build says what it made of the profile, and warns when the profile does not fit the program. Profiles from several runs merge with <code>merge-profiles.py</code>; sampled call stacks from JFR can be added with <code>jfr-to-samples.py</code>; and a profile recorded by Oracle GraalVM (<code>.iprof</code>) converts with <code>iprof-to-crucible.py</code>.</p>
+			</div>
+		</section>
+
+		<section class="section" aria-labelledby="features-title">
+			<h2 class="section-title" id="features-title">What it does</h2>
+			<p class="section-note">It reaches the compiler through extension points upstream already has, so rebasing onto a new GraalVM stays simple.</p>
+			<ul class="card-grid">
+				<li class="card">
+					<h3 class="card-name">Branch probabilities</h3>
+					<p class="card-desc">Counted in every place a method is inlined, and applied before inlining, so layout, inlining and the loop optimizations all see them.</p>
+				</li>
+				<li class="card">
+					<h3 class="card-name">Receiver types</h3>
+					<p class="card-desc">Counted at every virtual call in every calling context. The inliner tests for the common receivers first and inlines their methods.</p>
+				</li>
+				<li class="card">
+					<h3 class="card-name">Loop range splitting</h3>
+					<p class="card-desc">A hot loop whose checks always go one way runs its middle part without them — which also lets the vectorizer take it.</p>
+				</li>
+				<li class="card">
+					<h3 class="card-name">Cold code for size</h3>
+					<p class="card-desc">Methods the run never reached don't inline and are compiled as <code>-Os</code> would: images 7 to 12% smaller at the same speed.</p>
+				</li>
+				<li class="card">
+					<h3 class="card-name">Code layout</h3>
+					<p class="card-desc">The code section is ordered by how often each method ran.</p>
+				</li>
+				<li class="card">
+					<h3 class="card-name">Hot methods at <code>-O3</code></h3>
+					<p class="card-desc">Below <code>-O3</code>, hot methods still get its inliner, unrolling and vectorization — <code>-O3</code> speed in an <code>-O2</code>-sized image on the samples.</p>
+				</li>
+				<li class="card">
+					<h3 class="card-name">The collector, too</h3>
+					<p class="card-desc">GC branches are profiled like the program's, and the serial collector promotes and copies the way a profiled program wants.</p>
+				</li>
+				<li class="card">
+					<h3 class="card-name">Faster <code>System.arraycopy</code></h3>
+					<p class="card-desc">Copies go to <code>memmove</code> with one card mark per copy, instead of a scalar loop with a barrier per element.</p>
+				</li>
+			</ul>
+		</section>
+
+		<section class="section" aria-labelledby="compare-title">
+			<h2 class="section-title" id="compare-title">How it compares</h2>
+			<p class="section-note">Profile-guided binary from each compiler, same machine, <code>-O3</code>, every binary checked for identical output. All nineteen workloads measured, including the ones where CrucibleVM loses.</p>
+			<ul class="tally" aria-label="Summary">
+				<li data-result="ahead"><strong>13</strong> ahead</li>
+				<li data-result="level"><strong>2</strong> level</li>
+				<li data-result="behind"><strong>4</strong> behind</li>
+			</ul>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr>
+							<th scope="col">Workload</th>
+							<th scope="col" class="num">Oracle GraalVM</th>
+							<th scope="col" class="num">CrucibleVM</th>
+							<th scope="col" class="num">Result</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="group"><th scope="rowgroup" colspan="4">Services <span>requests a second, higher is better</span></th></tr>
+						<tr data-result="ahead"><td>Quarkus REST/JSON quickstart, <code>/fruits</code><span class="row-note">Image 14% larger than Oracle's</span></td><td class="num">90,364</td><td class="num win">93,401</td><td class="num result">3% more</td></tr>
+						<tr data-result="ahead"><td>Spring PetClinic, <code>/</code><span class="row-note">172 MB of memory where Oracle's binary has 390</span></td><td class="num">5,883</td><td class="num win">6,347</td><td class="num result">8% more</td></tr>
+						<tr data-result="ahead"><td>Spring PetClinic, <code>/vets</code> (JSON)</td><td class="num">36,936</td><td class="num win">44,188</td><td class="num result">20% more</td></tr>
+						<tr class="group"><th scope="rowgroup" colspan="4">Samples <span>milliseconds, lower is better</span></th></tr>
+						<tr data-result="ahead"><td>GameOfLife (Oracle's own example)</td><td class="num">3188</td><td class="num win">2959</td><td class="num result">7% faster</td></tr>
+						<tr data-result="ahead"><td>ArrayBench</td><td class="num">372</td><td class="num win">326</td><td class="num result">12% faster</td></tr>
+						<tr data-result="ahead"><td>BranchBench</td><td class="num">547</td><td class="num win">461</td><td class="num result">16% faster</td></tr>
+						<tr data-result="ahead"><td>JsonBench</td><td class="num">1545</td><td class="num win">1410</td><td class="num result">9% faster</td></tr>
+						<tr data-result="ahead"><td>BenchPGO</td><td class="num">372</td><td class="num win">294</td><td class="num result">21% faster</td></tr>
+						<tr class="group"><th scope="rowgroup" colspan="4">Renaissance <span>milliseconds, lower is better</span></th></tr>
+						<tr data-result="ahead"><td>par-mnemonics</td><td class="num">1832</td><td class="num win">1347</td><td class="num result">26% faster</td></tr>
+						<tr data-result="ahead"><td>akka-uct<span class="row-note">Peaks at 3,072 MB where Oracle's binary uses 983; 8% ahead with the heap capped at Oracle's</span></td><td class="num">13950</td><td class="num win">10942</td><td class="num result">22% faster</td></tr>
+						<tr data-result="ahead"><td>scala-doku</td><td class="num">1246</td><td class="num win">1058</td><td class="num result">15% faster</td></tr>
+						<tr data-result="ahead"><td>mnemonics</td><td class="num">1824</td><td class="num win">1592</td><td class="num result">13% faster</td></tr>
+						<tr data-result="ahead"><td>philosophers</td><td class="num">1713</td><td class="num win">1613</td><td class="num result">6% faster</td></tr>
+						<tr data-result="ahead"><td>reactors<span class="row-note">Each binary is ahead in some rounds, by up to 12%</span></td><td class="num">10135</td><td class="num win">9766</td><td class="num result">4% faster</td></tr>
+						<tr data-result="level"><td>future-genetic<span class="row-note">One iteration in four or five is 20–25% slower</span></td><td class="num">943</td><td class="num">929</td><td class="num result">level</td></tr>
+						<tr data-result="level"><td>scala-kmeans<span class="row-note">5–6% behind with the heap capped at Oracle's memory</span></td><td class="num">171.2</td><td class="num">171.0</td><td class="num result">level</td></tr>
+						<tr data-result="behind"><td>fj-kmeans<span class="row-note">The cost of the identity-hash-code object layout, which Oracle pays too</span></td><td class="num win">3065</td><td class="num">3146</td><td class="num result">3% slower</td></tr>
+						<tr data-result="behind"><td>rx-scrabble<span class="row-note">Oracle compiles the loop every pipeline runs through once per pipeline; 1.6% behind with sampled stacks</span></td><td class="num win">63.7</td><td class="num">67.8</td><td class="num result">6% slower</td></tr>
+						<tr data-result="behind"><td>scala-stm-bench7<span class="row-note">Young collections promote more slowly than Oracle's; peaks at 458 MB against 365</span></td><td class="num win">892</td><td class="num">958</td><td class="num result">7% slower</td></tr>
+						<tr data-result="behind"><td>scrabble<span class="row-note">The collector sizes the heap where it collects badly; level when capped at 192–256 MB. Peaks at 350 MB against 182</span></td><td class="num win">251.3</td><td class="num">277.0</td><td class="num result">10% slower</td></tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="caveats">
+				<div class="caveat">
+					<h3>Where it is behind</h3>
+					<p>Where CrucibleVM loses, the two compilers already differ by about that much without any profile. On the programs that allocate most, the gap is allocation and garbage collection rather than the optimizer: on scrabble the community edition allocates a third more than Oracle's before a profile is involved.</p>
+				</div>
+				<div class="caveat">
+					<h3>Memory</h3>
+					<p>With each collector choosing its heap, CrucibleVM peaks in less memory on six of the twelve Renaissance benchmarks (fj-kmeans 168 MB against 637), about the same on three, and more on three: akka-uct, scrabble and scala-stm-bench7. Capped at the memory Oracle's binary uses, the geometric mean is 0.958 instead of 0.943.</p>
+				</div>
+				<div class="caveat">
+					<h3>Image size</h3>
+					<p>Oracle's builder cuts its code area by 44% with a profile on the two services; CrucibleVM by 21–22%. Its service images are still larger: Quarkus 44.2 MB against 38.9, PetClinic 161.2 MB against 146.4.</p>
+				</div>
+				<div class="caveat">
+					<h3>Without a profile</h3>
+					<p>The community edition starts behind: Oracle's compiler is ahead by 11% on Quarkus and 12–22% on PetClinic with no profile at all. CrucibleVM's profile is worth 65–82% on those, Oracle's 35–53%.</p>
+				</div>
+			</div>
+
+			<p class="fine-print">One machine with six processors. Renaissance: three rounds, 2026-09-30. Samples: eleven runs each, interleaved, 2026-09-29; Oracle's image depends on how long a run it was recorded on, and its figures are the better of a short and a long recording, while CrucibleVM's run within 1% from either. Services: each built by its framework's own native build, recorded under the load it is timed with, service and load on four processors each. Every number, and everything that was tried and did not work, is in <a href="https://github.com/SiteNetSoft/crucible/blob/crucible/main/crucible/ROADMAP.md">the roadmap</a> and <a href="https://github.com/SiteNetSoft/crucible/tree/crucible/main/docs/issues"><code>docs/issues/</code></a>.</p>
+		</section>
+
+		<section class="section" aria-labelledby="build-title">
+			<h2 class="section-title" id="build-title">Build it from source</h2>
+			<p class="section-note">You need <code>mx</code> and a labs JDK 25; <code>crucible/env.sh</code> sets both up. The first build takes 20 to 60 minutes.</p>
+			<pre><code>git clone https://github.com/SiteNetSoft/crucible.git &amp;&amp; cd crucible
+source crucible/env.sh
+cd substratevm &amp;&amp; mx build
+mx crucible-e2e      <span class="c"># records, rebuilds and checks that the profile was applied</span></code></pre>
+		</section>
+	</main>
+	<footer class="site-footer">
+		<p>CrucibleVM is a fork of GraalVM Community Edition, distributed under GPL v2 with the Classpath Exception, the same terms as upstream.</p>
+		<p>It is not affiliated with or endorsed by Oracle. GraalVM is a trademark of Oracle and/or its affiliates.</p>
+		<p><a href="https://github.com/SiteNetSoft/crucible">GitHub</a> · a <a href="https://sitenetsoft.org/">SiteNetSoft</a> project</p>
+	</footer>
+</body>
+</html>
