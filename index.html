@@ -76,7 +76,12 @@
 	<main>
 		<section class="section" aria-labelledby="usage-title">
 			<h2 class="section-title" id="usage-title">Three builds, one of them shipped</h2>
-			<p class="section-note">Everything is a <code>-H:</code> option behind <code>-H:+UnlockExperimentalVMOptions</code>.</p>
+			<p class="section-note">One script does it all; the steps it takes are below, for doing them by hand. Every option is a <code>-H:</code> option behind <code>-H:+UnlockExperimentalVMOptions</code>.</p>
+			<div class="quick-start">
+				<h3>In one command</h3>
+				<pre><code>crucible/pgo.sh --name app --run '$APP &lt;your workload arguments&gt;' -- -cp app.jar com.example.Main</code></pre>
+				<p>It builds an image that records, runs your workload on it, builds an image that samples call stacks, runs the workload again, and builds <code>./app</code>, the image to ship. In <code>--run</code>, <code>$APP</code> is the image to run; the workload has to let it exit normally, so stop a service with SIGTERM (build it with <code>--install-exit-handlers</code>). <code>--no-samples</code> stops after the counted profile. For Spring PetClinic the whole command takes about a quarter of an hour.</p>
+			</div>
 			<ol class="steps">
 				<li class="step">
 					<div>
@@ -108,7 +113,7 @@ mx native-image -O3 -cp app.jar -o app-recording \
 
 		<section class="section" aria-labelledby="features-title">
 			<h2 class="section-title" id="features-title">What it does</h2>
-			<p class="section-note">It reaches the compiler through extension points upstream already has, so rebasing onto a new GraalVM stays simple.</p>
+			<p class="section-note">The profile work reaches the compiler through extension points upstream already has, with a few lines changed upstream where one was missing, so rebasing onto a new GraalVM stays simple. The collector and <code>System.arraycopy</code> changes are changes to upstream's own files.</p>
 			<ul class="card-grid">
 				<li class="card">
 					<h3 class="card-name">Branch probabilities</h3>
@@ -139,6 +144,10 @@ mx native-image -O3 -cp app.jar -o app-recording \
 					<p class="card-desc">GC branches are profiled like the program's, and the serial collector promotes and copies the way a profiled program wants.</p>
 				</li>
 				<li class="card">
+					<h3 class="card-name">Smaller objects</h3>
+					<p class="card-desc">The recording lists the types the run locked; the others it used drop their eight-byte monitor slot. They still lock correctly, only slowly, so record a workload that locks what production locks.</p>
+				</li>
+				<li class="card">
 					<h3 class="card-name">Faster <code>System.arraycopy</code></h3>
 					<p class="card-desc">Copies go to <code>memmove</code> with one card mark per copy, instead of a scalar loop with a barrier per element.</p>
 				</li>
@@ -147,12 +156,28 @@ mx native-image -O3 -cp app.jar -o app-recording \
 
 		<section class="section" aria-labelledby="compare-title">
 			<h2 class="section-title" id="compare-title">How it compares</h2>
-			<p class="section-note">Profile-guided binary from each compiler, same machine, <code>-O3</code>, every binary checked for identical output. All nineteen workloads measured, including the ones where CrucibleVM loses.</p>
-			<ul class="tally" aria-label="Summary">
-				<li data-result="ahead"><strong>13</strong> ahead</li>
-				<li data-result="level"><strong>2</strong> level</li>
-				<li data-result="behind"><strong>4</strong> behind</li>
-			</ul>
+			<p class="section-note">Profile-guided binary from each compiler, Oracle GraalVM 25.0.4 against CrucibleVM on GraalVM Community Edition 25.4.4.1.1, same machine, <code>-O3</code>, every binary checked for identical output, measured 2026-10-08 to 11. Every workload is listed, including the ones where CrucibleVM loses. <a href="#tested-title">What it was measured on</a> is below; one machine is one machine, so please run your own.</p>
+
+			<dl class="stats">
+				<div>
+					<dt>Renaissance, fourteen benchmarks, from sampled stacks</dt>
+					<dd><strong>0.871</strong> of Oracle's time</dd>
+					<dd class="stat-note">2026-10-11, with smaller objects; 0.881 without them in the same session</dd>
+				</div>
+				<div>
+					<dt>The same, from a counted profile</dt>
+					<dd><strong>0.913</strong> of Oracle's time</dd>
+					<dd class="stat-note">The plain recording, no second sampled run; 2026-10-08, before smaller objects</dd>
+				</div>
+				<div>
+					<dt>Behind Oracle</dt>
+					<dd><strong>1</strong> of fourteen</dd>
+					<dd class="stat-note">rx-scrabble, by 2%, in one session on 2026-10-11. Over three sessions before smaller objects, scala-stm-bench7 was behind too, by up to 2%</dd>
+				</div>
+			</dl>
+			<p class="how-to-read">Below 1 means less time than Oracle's binary: 0.871 is 13% less. It is the geometric mean, over the benchmarks, of CrucibleVM's time divided by Oracle's.</p>
+
+			<h3 class="sub-title">Services and samples</h3>
 			<div class="table-wrap">
 				<table>
 					<thead>
@@ -165,52 +190,100 @@ mx native-image -O3 -cp app.jar -o app-recording \
 					</thead>
 					<tbody>
 						<tr class="group"><th scope="rowgroup" colspan="4">Services <span>requests a second, higher is better</span></th></tr>
-						<tr data-result="ahead"><td>Quarkus REST/JSON quickstart, <code>/fruits</code><span class="row-note">Image 14% larger than Oracle's</span></td><td class="num">90,364</td><td class="num win">93,401</td><td class="num result">3% more</td></tr>
-						<tr data-result="ahead"><td>Spring PetClinic, <code>/</code><span class="row-note">172 MB of memory where Oracle's binary has 390</span></td><td class="num">5,883</td><td class="num win">6,347</td><td class="num result">8% more</td></tr>
-						<tr data-result="ahead"><td>Spring PetClinic, <code>/vets</code> (JSON)</td><td class="num">36,936</td><td class="num win">44,188</td><td class="num result">20% more</td></tr>
-						<tr class="group"><th scope="rowgroup" colspan="4">Samples <span>milliseconds, lower is better</span></th></tr>
-						<tr data-result="ahead"><td>GameOfLife (Oracle's own example)</td><td class="num">3188</td><td class="num win">2959</td><td class="num result">7% faster</td></tr>
-						<tr data-result="ahead"><td>ArrayBench</td><td class="num">372</td><td class="num win">326</td><td class="num result">12% faster</td></tr>
-						<tr data-result="ahead"><td>BranchBench</td><td class="num">547</td><td class="num win">461</td><td class="num result">16% faster</td></tr>
-						<tr data-result="ahead"><td>JsonBench</td><td class="num">1545</td><td class="num win">1410</td><td class="num result">9% faster</td></tr>
-						<tr data-result="ahead"><td>BenchPGO</td><td class="num">372</td><td class="num win">294</td><td class="num result">21% faster</td></tr>
-						<tr class="group"><th scope="rowgroup" colspan="4">Renaissance <span>milliseconds, lower is better</span></th></tr>
-						<tr data-result="ahead"><td>par-mnemonics</td><td class="num">1832</td><td class="num win">1347</td><td class="num result">26% faster</td></tr>
-						<tr data-result="ahead"><td>akka-uct<span class="row-note">Peaks at 3,072 MB where Oracle's binary uses 983; 8% ahead with the heap capped at Oracle's</span></td><td class="num">13950</td><td class="num win">10942</td><td class="num result">22% faster</td></tr>
-						<tr data-result="ahead"><td>scala-doku</td><td class="num">1246</td><td class="num win">1058</td><td class="num result">15% faster</td></tr>
-						<tr data-result="ahead"><td>mnemonics</td><td class="num">1824</td><td class="num win">1592</td><td class="num result">13% faster</td></tr>
-						<tr data-result="ahead"><td>philosophers</td><td class="num">1713</td><td class="num win">1613</td><td class="num result">6% faster</td></tr>
-						<tr data-result="ahead"><td>reactors<span class="row-note">Each binary is ahead in some rounds, by up to 12%</span></td><td class="num">10135</td><td class="num win">9766</td><td class="num result">4% faster</td></tr>
-						<tr data-result="level"><td>future-genetic<span class="row-note">One iteration in four or five is 20–25% slower</span></td><td class="num">943</td><td class="num">929</td><td class="num result">level</td></tr>
-						<tr data-result="level"><td>scala-kmeans<span class="row-note">5–6% behind with the heap capped at Oracle's memory</span></td><td class="num">171.2</td><td class="num">171.0</td><td class="num result">level</td></tr>
-						<tr data-result="behind"><td>fj-kmeans<span class="row-note">The cost of the identity-hash-code object layout, which Oracle pays too</span></td><td class="num win">3065</td><td class="num">3146</td><td class="num result">3% slower</td></tr>
-						<tr data-result="behind"><td>rx-scrabble<span class="row-note">Oracle compiles the loop every pipeline runs through once per pipeline; 1.6% behind with sampled stacks</span></td><td class="num win">63.7</td><td class="num">67.8</td><td class="num result">6% slower</td></tr>
-						<tr data-result="behind"><td>scala-stm-bench7<span class="row-note">Young collections promote more slowly than Oracle's; peaks at 458 MB against 365</span></td><td class="num win">892</td><td class="num">958</td><td class="num result">7% slower</td></tr>
-						<tr data-result="behind"><td>scrabble<span class="row-note">The collector sizes the heap where it collects badly; level when capped at 192–256 MB. Peaks at 350 MB against 182</span></td><td class="num win">251.3</td><td class="num">277.0</td><td class="num result">10% slower</td></tr>
+						<tr data-result="ahead"><td>Quarkus REST/JSON quickstart, <code>/fruits</code></td><td class="num">100,060</td><td class="num win">105,200</td><td class="num result">5% more</td></tr>
+						<tr data-result="ahead"><td>Spring PetClinic, <code>/vets</code> (JSON)</td><td class="num">36,800</td><td class="num win">46,500</td><td class="num result">26% more</td></tr>
+						<tr data-result="ahead"><td>Spring PetClinic, <code>/</code></td><td class="num">5,890</td><td class="num win">6,550</td><td class="num result">11% more</td></tr>
+						<tr class="group"><th scope="rowgroup" colspan="4">Samples <span>seconds, lower is better</span></th></tr>
+						<tr data-result="ahead"><td>GameOfLife (Oracle's own example)</td><td class="num">3.39</td><td class="num win">2.91</td><td class="num result">14% faster</td></tr>
+						<tr data-result="ahead"><td>ArrayBench<span class="row-note">Oracle's image depends on how long a run it was recorded on: on 25.3 a short recording gave it 0.37 s</span></td><td class="num">1.19</td><td class="num win">0.31</td><td class="num result">74% faster</td></tr>
+						<tr data-result="level"><td>BranchBench<span class="row-note">17% lost to control flow duplication, new in 25.4; on 25.3 it was 16% ahead</span></td><td class="num">0.55</td><td class="num">0.54</td><td class="num result">about level</td></tr>
+						<tr data-result="ahead"><td>JsonBench</td><td class="num">1.56</td><td class="num win">1.39</td><td class="num result">11% faster</td></tr>
+						<tr data-result="ahead"><td>BenchPGO<span class="row-note">9% lost to control flow duplication</span></td><td class="num">0.37</td><td class="num win">0.32</td><td class="num result">14% faster</td></tr>
 					</tbody>
 				</table>
 			</div>
+			<p class="fine-print">The services are built and recorded with <code>crucible/pgo.sh</code> under the load they are timed with. The samples are built from counted recordings, medians of eleven runs.</p>
+
+			<h3 class="sub-title">Renaissance <span>from sampled stacks, three sessions of five rounds, 2026-10-09 and 10</span></h3>
+			<p class="how-to-read">These sessions were before smaller objects. With them, on 2026-10-11: akka-uct 5.4% faster, scala-stm-bench7 4.8%, scala-kmeans, scala-doku, mnemonics, scrabble, reactors and rx-scrabble 1.4 to 2.2%, four within 1%, and philosophers 3% slower.</p>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr>
+							<th scope="col">Benchmark</th>
+							<th scope="col" class="num">Peak memory, CrucibleVM against Oracle</th>
+							<th scope="col" class="num">Time against Oracle</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr data-result="ahead"><td>par-mnemonics</td><td class="num">about the same</td><td class="num result">29% faster</td></tr>
+						<tr data-result="ahead"><td>scrabble<span class="row-note">The collector now prefetches while it copies, worth 20% here</span></td><td class="num">335 MB against 174</td><td class="num result">23% faster</td></tr>
+						<tr data-result="ahead"><td>scala-doku</td><td class="num">82 MB against 132</td><td class="num result">23% faster</td></tr>
+						<tr data-result="ahead"><td>philosophers, fj-kmeans, akka-uct<span class="row-note">fj-kmeans 179 MB against 530; philosophers about the same; akka-uct 2,460 MB against 931, but with <code>-Xmx700m</code> it runs as fast in 723 MB</span></td><td class="num">see note</td><td class="num result">12 to 16% faster</td></tr>
+						<tr data-result="ahead"><td>future-genetic, finagle-chirper<span class="row-note">finagle-chirper 125 MB against 258; future-genetic about the same</span></td><td class="num">see note</td><td class="num result">8 to 10% faster</td></tr>
+						<tr data-result="ahead"><td>reactors</td><td class="num">841 MB against 1,093</td><td class="num result">7 to 13% faster</td></tr>
+						<tr data-result="ahead"><td>mnemonics</td><td class="num">202 MB against 353</td><td class="num result">6 to 10% faster</td></tr>
+						<tr data-result="ahead"><td>finagle-http</td><td class="num">91 MB against 115</td><td class="num result">5% faster</td></tr>
+						<tr data-result="ahead"><td>scala-kmeans</td><td class="num">about the same</td><td class="num result">2% faster</td></tr>
+						<tr data-result="behind"><td>rx-scrabble<span class="row-note">2% behind on 2026-10-11. About half is young collections inside the timed iterations: the collector keeps eden at about 71 MB where an iteration allocates over 100 MB</span></td><td class="num">114 MB against 153</td><td class="num result">3 to 4% slower</td></tr>
+						<tr data-result="behind"><td>scala-stm-bench7<span class="row-note">3.4% ahead since 2026-10-11, with smaller objects</span></td><td class="num">about the same</td><td class="num result">up to 2% slower</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="fine-print">The README gives each benchmark's result as a percentage or a range over the three sessions, and groups some benchmarks that fell in the same range; this table keeps its grouping. Memory is three rounds, 2026-10-10, with each collector choosing its heap: CrucibleVM peaks lower on seven of the fourteen, about the same on five, higher on two.</p>
 
 			<div class="caveats">
 				<div class="caveat">
 					<h3>Where it is behind</h3>
-					<p>Where CrucibleVM loses, the two compilers already differ by about that much without any profile. On the programs that allocate most, the gap is allocation and garbage collection rather than the optimizer: on scrabble the community edition allocates a third more than Oracle's before a profile is involved.</p>
-				</div>
-				<div class="caveat">
-					<h3>Memory</h3>
-					<p>With each collector choosing its heap, CrucibleVM peaks in less memory on six of the twelve Renaissance benchmarks (fj-kmeans 168 MB against 637), about the same on three, and more on three: akka-uct, scrabble and scala-stm-bench7. Capped at the memory Oracle's binary uses, the geometric mean is 0.958 instead of 0.943.</p>
-				</div>
-				<div class="caveat">
-					<h3>Image size</h3>
-					<p>Oracle's builder cuts its code area by 44% with a profile on the two services; CrucibleVM by 21–22%. Its service images are still larger: Quarkus 44.2 MB against 38.9, PetClinic 161.2 MB against 146.4.</p>
+					<p>On rx-scrabble both binaries run the same instructions outside the collector; about half the gap is young collections inside the timed iterations, 49 over forty iterations against Oracle's 6. scala-stm-bench7, which was behind for what the profile buys Oracle's compiler, is ahead since its objects got smaller.</p>
 				</div>
 				<div class="caveat">
 					<h3>Without a profile</h3>
-					<p>The community edition starts behind: Oracle's compiler is ahead by 11% on Quarkus and 12–22% on PetClinic with no profile at all. CrucibleVM's profile is worth 65–82% on those, Oracle's 35–53%.</p>
+					<p>With no profile at all CrucibleVM was 1.8% behind Oracle's builder over the fourteen on 2026-10-06, and 30% behind on par-mnemonics; a profile made CrucibleVM's binaries 1.41 times as fast and Oracle's 1.24 times. On 2026-10-10, over eight of them, the two were level (1.001), par-mnemonics 27% behind. Oracle's builder predicts branch probabilities with a model when it has no profile, worth 8% to it on those eight; CrucibleVM's <code>main</code> does not yet.</p>
+				</div>
+				<div class="caveat">
+					<h3>In testing: a profile of the class library</h3>
+					<p>Much of what a program runs is the JDK, and a branch of <code>HashMap</code> or of a stream goes much the same way whoever calls it. On the branch <code>crucible/static-profiler</code>, off by default and not yet in <code>main</code>, a build without a profile takes the probabilities of the library's branches from what other programs recorded for them. Measured 2026-10-11 without a profile: eight Renaissance benchmarks, each from the recordings of the thirteen others, come to 0.968 of the time of Oracle's default build, from 1.010, with none more than 0.4% slower. From the Renaissance recordings alone, on programs of another kind: JsonBench is 18% faster and no sample is slower; Spring PetClinic serves 8.2% and 3.1% more requests a second on its two pages and the Quarkus quickstart 4.3% and 4.0%. That is a third of the way to a profile of its own on PetClinic's page and a tenth on Quarkus: a help for a build nobody profiled, not a replacement for profiling.</p>
+				</div>
+				<div class="caveat">
+					<h3>What 25.4 changed</h3>
+					<p>Control flow duplication, new in 25.4, stays on with a profile: the fourteen gain 0.7% from it, while BranchBench loses 17% and BenchPGO 9%. Since 2026-10-08 the collector prefetches what the objects it copies point to once a collection copies more than 1 MB, and since 2026-10-11 types the run used and never locked drop their monitor slot.</p>
+				</div>
+				<div class="caveat">
+					<h3>Image size</h3>
+					<p>Last measured on 25.3: Oracle's builder cut its code area by 44% with a profile on the two services, CrucibleVM by 21–22%. Its service images were still larger: Quarkus 44.2 MB against 38.9, PetClinic 161.2 MB against 146.4.</p>
 				</div>
 			</div>
 
-			<p class="fine-print">One machine with six processors. Renaissance: three rounds, 2026-09-30. Samples: eleven runs each, interleaved, 2026-09-29; Oracle's image depends on how long a run it was recorded on, and its figures are the better of a short and a long recording, while CrucibleVM's run within 1% from either. Services: each built by its framework's own native build, recorded under the load it is timed with, service and load on four processors each. Every number, and everything that was tried and did not work, is in <a href="https://github.com/SiteNetSoft/crucible/blob/crucible/main/crucible/ROADMAP.md">the roadmap</a> and <a href="https://github.com/SiteNetSoft/crucible/tree/crucible/main/docs/issues"><code>docs/issues/</code></a>.</p>
+			<h3 class="sub-title" id="tested-title">What it was measured on</h3>
+			<div class="table-wrap">
+				<table>
+					<tbody>
+						<tr><td>Processor</td><td>Intel Xeon E-2236, 6 cores and 12 threads, 3.4 GHz (4.8 GHz turbo), 12 MB of L3 cache</td></tr>
+						<tr><td>Memory</td><td>32 GB</td></tr>
+						<tr><td>System</td><td>Rocky Linux 10.2, kernel 6.12, x86-64; builds and runs inside a rootless Podman container of Rocky Linux 10</td></tr>
+						<tr><td>Limits</td><td>Renaissance and the samples: 6 processors and 14 GB. The services: 8 processors and 24 GB, the service on four processors and the load generator (<code>oha</code>, 16 connections) on four others</td></tr>
+						<tr><td>Oracle's side</td><td>Oracle GraalVM 25.0.4 (<code>25.0.4+7-LTS-jvmci-b01</code>), <code>--pgo-instrument</code> then <code>--pgo</code>, which builds at <code>-O3</code></td></tr>
+						<tr><td>CrucibleVM's side</td><td><code>crucible/main</code> on GraalVM Community Edition 25.4.4.1.1 with labs JDK 25, <code>-O3</code>, defaults</td></tr>
+						<tr><td>Collector and heap</td><td>The serial collector in both, each choosing its own heap unless a row says otherwise</td></tr>
+						<tr><td>Method</td><td>Renaissance 0.16.1, each benchmark as a standalone image: the median iteration after the first third of 10 to 20, five rounds with the binaries taken in turn, and the median of the rounds. Samples: wall time, median of eleven runs in turn. Services: requests a second over 20 s after 10 s of warm-up, median of three rounds</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="fine-print">Only Linux on x86-64 has been built and measured. Two builds of the same source can differ by 2 to 5% on some of these benchmarks, philosophers most of all, so a difference of that size on one of them is not a result.</p>
+
+			<div class="caveats">
+				<div class="caveat">
+					<h3>Run your own</h3>
+					<p>These are one machine's numbers on one set of programs, and yours will differ. Build your program both ways, <code>crucible/pgo.sh</code> here and <code>--pgo</code> with Oracle GraalVM, give both the same workload, check that they print the same, and time them in turn. <code>crucible/samples/bench.sh</code> times a sample with a profile against the same build without one.</p>
+				</div>
+				<div class="caveat">
+					<h3>Tell us what you find</h3>
+					<p>Faster, slower or wrong, with the machine, the two versions and the commands, in <a href="https://github.com/SiteNetSoft/crucible/issues">an issue</a>. A program where CrucibleVM loses is the most useful thing you can send.</p>
+				</div>
+			</div>
+
+			<p class="fine-print">One machine. The earlier GraalVM 25.3 results, every number behind these, and everything that was tried and did not work are in <a href="https://github.com/SiteNetSoft/crucible/blob/crucible/main/crucible/README.md#how-it-compares">the README</a>, <a href="https://github.com/SiteNetSoft/crucible/blob/crucible/main/crucible/ROADMAP.md">the roadmap</a> and <a href="https://github.com/SiteNetSoft/crucible/tree/crucible/main/docs/issues"><code>docs/issues/</code></a>.</p>
 		</section>
 
 		<section class="section" aria-labelledby="build-title">
