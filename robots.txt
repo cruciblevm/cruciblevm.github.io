@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://cruciblevm.github.io/sitemap.xml
+Sitemap: https://cruciblevm.org/sitemap.xml

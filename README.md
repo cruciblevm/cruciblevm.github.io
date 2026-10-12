@@ -2,7 +2,7 @@
 
 # cruciblevm.github.io
 
-Source for [cruciblevm.github.io](https://cruciblevm.github.io/) — the landing page for
+Source for [cruciblevm.org](https://cruciblevm.org/) — the landing page for
 [CrucibleVM](https://github.com/SiteNetSoft/crucible), open-source profile-guided optimization
 for GraalVM Community Edition `native-image`.
 
@@ -14,4 +14,5 @@ for GraalVM Community Edition `native-image`.
   first. Favicons and `assets/og-banner.png` are rendered from those SVGs with Inkscape.
 - Benchmark figures on the page come from `crucible/README.md` and `crucible/ROADMAP.md`; keep
   them in step when those change.
-- Served by GitHub Pages from the `main` branch root.
+- Served by GitHub Pages from the `main` branch root, at `cruciblevm.org`; the `CNAME` file names
+  the domain, and its DNS is at GoDaddy.
