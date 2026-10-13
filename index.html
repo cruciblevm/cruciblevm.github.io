@@ -64,8 +64,11 @@
 		<p class="hero-tagline">Open-source profile-guided optimization for <code>native-image</code>.</p>
 		<p class="hero-intro">CrucibleVM is a fork of GraalVM Community Edition. Build your program once so that it records how it runs, run it on a workload that looks like production, and build it again with what it recorded. The second build knows which branches go which way, which methods the time is spent in, and where calls actually land — and compiles accordingly.</p>
 		<p class="hero-links">
-			<a class="button button--primary" href="https://github.com/SiteNetSoft/crucible">View on GitHub</a>
+			<a class="button button--primary" href="https://github.com/SiteNetSoft/crucible/releases/tag/v0.1.0">Download 0.1.0</a>
+			<a class="button" href="https://github.com/SiteNetSoft/crucible">View on GitHub</a>
 			<a class="button" href="https://github.com/SiteNetSoft/crucible/blob/crucible/main/crucible/README.md">Read the docs</a>
+		</p>
+		<p class="hero-note">Linux x86-64, 547 MB, a GraalVM JDK 25 with <code>native-image</code> and the CrucibleVM scripts; it needs <code>gcc</code>, the C library headers, <code>zlib</code> headers and <code>python3</code>. <a href="https://github.com/SiteNetSoft/crucible/releases/tag/v0.1.0">Release notes and checksum</a>.
 		</p>
 	</header>
 	<aside class="notice" aria-label="Alpha notice">
@@ -79,7 +82,9 @@
 			<p class="section-note">One script does it all; the steps it takes are below, for doing them by hand. Every option is a <code>-H:</code> option behind <code>-H:+UnlockExperimentalVMOptions</code>.</p>
 			<div class="quick-start">
 				<h3>In one command</h3>
-				<pre><code>crucible/pgo.sh --name app --run '$APP &lt;your workload arguments&gt;' -- -cp app.jar com.example.Main</code></pre>
+				<pre><code><span class="c"># from the release archive; in a source tree, crucible/pgo.sh</span>
+tar xzf cruciblevm-0.1.0-linux-x86_64.tar.gz
+cruciblevm/crucible/pgo.sh --name app --run '$APP &lt;your workload arguments&gt;' -- -cp app.jar com.example.Main</code></pre>
 				<p>It builds an image that records, runs your workload on it, builds an image that samples call stacks, runs the workload again, and builds <code>./app</code>, the image to ship. In <code>--run</code>, <code>$APP</code> is the image to run; the workload has to let it exit normally, so stop a service with SIGTERM (build it with <code>--install-exit-handlers</code>). <code>--no-samples</code> stops after the counted profile. For Spring PetClinic the whole command takes about a quarter of an hour.</p>
 			</div>
 			<ol class="steps">
@@ -296,8 +301,8 @@ mx native-image -O3 -cp app.jar -o app-recording \
 		</section>
 
 		<section class="section" aria-labelledby="build-title">
-			<h2 class="section-title" id="build-title">Build it from source</h2>
-			<p class="section-note">You need <code>mx</code> and a labs JDK 25; <code>crucible/env.sh</code> sets both up. The first build takes 20 to 60 minutes.</p>
+			<h2 class="section-title" id="build-title">Download it, or build it from source</h2>
+			<p class="section-note"><a href="https://github.com/SiteNetSoft/crucible/releases/download/v0.1.0/cruciblevm-0.1.0-linux-x86_64.tar.gz">CrucibleVM 0.1.0 for Linux x86-64</a> is a tar.gz that needs neither <code>mx</code> nor the source tree: unpack it and use <code>cruciblevm/bin/native-image</code> and <code>cruciblevm/crucible/pgo.sh</code>. It was built on Rocky Linux 10 and checked on Ubuntu 24.04 with only <code>gcc libc6-dev zlib1g-dev python3</code> installed. To build it yourself you need <code>mx</code> and a labs JDK 25; <code>crucible/env.sh</code> sets both up, and the first build takes 20 to 60 minutes.</p>
 			<pre><code>git clone https://github.com/SiteNetSoft/crucible.git &amp;&amp; cd crucible
 source crucible/env.sh
 cd substratevm &amp;&amp; mx build
