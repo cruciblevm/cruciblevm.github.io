@@ -192,6 +192,13 @@ pre .c { color: var(--color-muted); }
   margin-top: var(--space-4);
 }
 
+.hero-note {
+  max-width: var(--measure);
+  margin: var(--space-3) auto 0;
+  font-size: 0.9375rem;
+  color: var(--color-muted);
+}
+
 .button {
   display: inline-block;
   padding: 0.55rem 1.1rem;
