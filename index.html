@@ -116,6 +116,10 @@ mx native-image -O3 -cp app.jar -o app-recording \
 			<p class="section-note">The profile work reaches the compiler through extension points upstream already has, with a few lines changed upstream where one was missing, so rebasing onto a new GraalVM stays simple. The collector and <code>System.arraycopy</code> changes are changes to upstream's own files.</p>
 			<ul class="card-grid">
 				<li class="card">
+					<h3 class="card-name">The class library's profile</h3>
+					<p class="card-desc">A build without a profile gives the library's branches the probabilities other programs recorded for them, from a profile that comes with the builder.</p>
+				</li>
+				<li class="card">
 					<h3 class="card-name">Branch probabilities</h3>
 					<p class="card-desc">Counted in every place a method is inlined, and applied before inlining, so layout, inlining and the loop optimizations all see them.</p>
 				</li>
@@ -156,7 +160,7 @@ mx native-image -O3 -cp app.jar -o app-recording \
 
 		<section class="section" aria-labelledby="compare-title">
 			<h2 class="section-title" id="compare-title">How it compares</h2>
-			<p class="section-note">Profile-guided binary from each compiler, Oracle GraalVM 25.0.4 against CrucibleVM on GraalVM Community Edition 25.4.4.1.1, same machine, <code>-O3</code>, every binary checked for identical output. Every workload is listed, including the ones where CrucibleVM loses. <a href="#tested-title">What it was measured on</a> is below; one machine is one machine, so please run your own.</p>
+			<p class="section-note">Profile-guided binary from each compiler, Oracle GraalVM 25.0.4 against CrucibleVM on GraalVM Community Edition 25.4.4.1.1, same machine, <code>-O3</code>, every binary checked for identical output; without a profile, each builder at its default level with nothing asked for. Every workload is listed, including the ones where CrucibleVM loses. <a href="#tested-title">What it was measured on</a> is below; one machine is one machine, so please run your own.</p>
 
 			<dl class="stats">
 				<div>
@@ -173,6 +177,11 @@ mx native-image -O3 -cp app.jar -o app-recording \
 					<dt>Behind Oracle</dt>
 					<dd><strong>1</strong> of fourteen</dd>
 					<dd class="stat-note">rx-scrabble, by 2%, in one session. Over three sessions before smaller objects, scala-stm-bench7 was behind too, by up to 2%</dd>
+				</div>
+				<div>
+					<dt>Without a profile, at the default level</dt>
+					<dd><strong>0.917</strong> of Oracle's time</dd>
+					<dd class="stat-note">A plain build, nothing asked for, against Oracle's; ahead on thirteen, level on rx-scrabble; images 17% larger</dd>
 				</div>
 			</dl>
 			<p class="how-to-read">Below 1 means less time than Oracle's binary: 0.871 is 13% less. It is the geometric mean, over the benchmarks, of CrucibleVM's time divided by Oracle's.</p>
@@ -239,11 +248,11 @@ mx native-image -O3 -cp app.jar -o app-recording \
 				</div>
 				<div class="caveat">
 					<h3>Without a profile</h3>
-					<p>With no profile at all CrucibleVM was 1.8% behind Oracle's builder over the fourteen, and 30% behind on par-mnemonics; a profile made CrucibleVM's binaries 1.41 times as fast and Oracle's 1.24 times. In a later session, over eight of them, the two were level (1.001), par-mnemonics 27% behind. Oracle's builder predicts branch probabilities with a model when it has no profile, worth 8% to it on those eight; CrucibleVM's <code>main</code> does not yet.</p>
+					<p>A build nobody profiled, at the default level with nothing asked for, is what most builds are. Until 2026-10-12 CrucibleVM's ran at 1.16 of the time of Oracle's over the fourteen, scala-kmeans at twice it: a change in upstream GraalVM from August 2026 turns the inliner's exploration to its minimum at <code>-O2</code>, and every budget the inliner has is scaled by it, down to nothing. Oracle's 25.0.4 predates the change. The exploration is at its middle now and the default level has the <code>-O3</code> typical graph size: 0.938 of Oracle's time over the fourteen, 0.917 with the library's profile below, ahead on thirteen and level on rx-scrabble. Spring PetClinic serves 13% and 17% more requests a second than before, Quarkus 16%, which puts three of the four pages ahead of Oracle's binary and PetClinic's front page 11% behind it. The cost is size: images 17% larger than Oracle's on Renaissance, 20% on PetClinic and 27% on Quarkus, and a build a third longer than before, still a tenth shorter than Oracle's. A smaller setting, <code>-H:TypicalGraphSize=450</code>, gives Oracle's image size and Oracle's speed on everything but Scala collections code, where scala-kmeans stays at 1.76. philosophers is the one benchmark that ran faster with the inliner starved, by 12%, and stays 10% ahead of Oracle.</p>
 				</div>
 				<div class="caveat">
-					<h3>In testing: a profile of the class library</h3>
-					<p>Much of what a program runs is the JDK, and a branch of <code>HashMap</code> or of a stream goes much the same way whoever calls it. On the branch <code>crucible/static-profiler</code>, off by default and not yet in <code>main</code>, a build without a profile takes the probabilities of the library's branches from what other programs recorded for them. Without a profile, eight Renaissance benchmarks, each from the recordings of the thirteen others, come to 0.968 of the time of Oracle's default build, from 1.010, with none more than 0.4% slower. From the Renaissance recordings alone, on programs of another kind: JsonBench is 18% faster and no sample is slower; Spring PetClinic serves 8.2% and 3.1% more requests a second on its two pages and the Quarkus quickstart 4.3% and 4.0%. That is a third of the way to a profile of its own on PetClinic's page and a tenth on Quarkus: a help for a build nobody profiled, not a replacement for profiling.</p>
+					<h3>A profile of the class library</h3>
+					<p>Much of what a program runs is the JDK, and a branch of <code>HashMap</code> or of a stream goes much the same way whoever calls it. Since 2026-10-13 a build without a profile takes the probabilities of the library's branches from what other programs recorded for them, a profile of the library that comes with the builder; <code>-H:-CrucibleLibraryProfile</code> turns it off, and a build with a profile of its own does not use it. Over the fourteen at the default level it takes CrucibleVM from 0.938 to 0.917 of Oracle's time, 4,900 to 6,100 branches an image, with the branches that leave a loop left alone: the two services gain 3 to 5%, philosophers 6%, and future-genetic and scala-doku lose under 1%. At <code>-O3</code> without a profile, 1.009 to 0.973. Measured earlier on the branch, from the Renaissance recordings alone, on programs of another kind: JsonBench 18% faster, Spring PetClinic 8.2% and 3.1% more requests a second on its two pages, the Quarkus quickstart 4.3% and 4.0%. A third of the way to a profile of its own on PetClinic's page and a tenth on Quarkus: a help for a build nobody profiled, not a replacement for profiling.</p>
 				</div>
 				<div class="caveat">
 					<h3>What 25.4 changed</h3>
