@@ -153,6 +153,10 @@ mx native-image -O3 -cp app.jar -o app-recording \
 					<p class="card-desc">GC branches are profiled like the program's, and the serial collector promotes and copies the way a profiled program wants.</p>
 				</li>
 				<li class="card">
+					<h3 class="card-name">Young collection on several threads</h3>
+					<p class="card-desc">New and opt-in: built with <code>-H:+ParallelYoungCollection</code>, the serial collector scans its young generation on up to nine threads. Programs that collect on several threads of their own gain most.</p>
+				</li>
+				<li class="card">
 					<h3 class="card-name">Smaller objects</h3>
 					<p class="card-desc">The recording lists the types the run locked; the others it used drop their eight-byte monitor slot. They still lock correctly, only slowly, so record a workload that locks what production locks.</p>
 				</li>
@@ -182,6 +186,11 @@ mx native-image -O3 -cp app.jar -o app-recording \
 					<dt>Behind Oracle</dt>
 					<dd><strong>1</strong> of fourteen</dd>
 					<dd class="stat-note">rx-scrabble, by 2%, in one session. Over three sessions before smaller objects, scala-stm-bench7 was behind too, by up to 2%</dd>
+				</div>
+				<div>
+					<dt>With the young collection on several threads</dt>
+					<dd><strong>0.827</strong> of Oracle's time</dd>
+					<dd class="stat-note">Opt-in, on <code>crucible/main</code> since 2026-10-16, not in 0.1.0; 0.858 with the serial collector in the same session, on 8 processors</dd>
 				</div>
 				<div>
 					<dt>Without a profile, at the default level</dt>
@@ -233,7 +242,7 @@ mx native-image -O3 -cp app.jar -o app-recording \
 						<tr data-result="ahead"><td>par-mnemonics</td><td class="num">about the same</td><td class="num result">29% faster</td></tr>
 						<tr data-result="ahead"><td>scrabble<span class="row-note">The collector now prefetches while it copies, worth 20% here</span></td><td class="num">335 MB against 174</td><td class="num result">23% faster</td></tr>
 						<tr data-result="ahead"><td>scala-doku</td><td class="num">82 MB against 132</td><td class="num result">23% faster</td></tr>
-						<tr data-result="ahead"><td>philosophers, fj-kmeans, akka-uct<span class="row-note">fj-kmeans 179 MB against 530; philosophers about the same; akka-uct 2,460 MB against 931, but with <code>-Xmx700m</code> it runs as fast in 723 MB</span></td><td class="num">see note</td><td class="num result">12 to 16% faster</td></tr>
+						<tr data-result="ahead"><td>philosophers, fj-kmeans, akka-uct<span class="row-note">fj-kmeans 179 MB against 530; philosophers about the same; akka-uct 2,460 MB against 931, but with <code>-Xmx700m</code> it runs as fast in 723 MB, and with the young collection on several threads it peaks at 1,131 MB against 904</span></td><td class="num">see note</td><td class="num result">12 to 16% faster</td></tr>
 						<tr data-result="ahead"><td>future-genetic, finagle-chirper<span class="row-note">finagle-chirper 125 MB against 258; future-genetic about the same</span></td><td class="num">see note</td><td class="num result">8 to 10% faster</td></tr>
 						<tr data-result="ahead"><td>reactors</td><td class="num">841 MB against 1,093</td><td class="num result">7 to 13% faster</td></tr>
 						<tr data-result="ahead"><td>mnemonics</td><td class="num">202 MB against 353</td><td class="num result">6 to 10% faster</td></tr>
@@ -260,6 +269,10 @@ mx native-image -O3 -cp app.jar -o app-recording \
 					<p>Much of what a program runs is the JDK, and a branch of <code>HashMap</code> or of a stream goes much the same way whoever calls it. Since 2026-10-13 a build without a profile takes the probabilities of the library's branches from what other programs recorded for them, a profile of the library that comes with the builder; <code>-H:-CrucibleLibraryProfile</code> turns it off, and a build with a profile of its own does not use it. Over the fourteen at the default level it takes CrucibleVM from 0.938 to 0.917 of Oracle's time, 4,900 to 6,100 branches an image, with the branches that leave a loop left alone: the two services gain 3 to 5%, philosophers 6%, and future-genetic and scala-doku lose under 1%. At <code>-O3</code> without a profile, 1.009 to 0.973. Measured earlier on the branch, from the Renaissance recordings alone, on programs of another kind: JsonBench 18% faster, Spring PetClinic 8.2% and 3.1% more requests a second on its two pages, the Quarkus quickstart 4.3% and 4.0%. A third of the way to a profile of its own on PetClinic's page and a tenth on Quarkus: a help for a build nobody profiled, not a replacement for profiling.</p>
 				</div>
 				<div class="caveat">
+					<h3>Collecting on several threads</h3>
+					<p>Native Image in the community edition has one collector, and it collects on one thread; Oracle's G1, which needs a library only Oracle GraalVM ships, collects on several. Measured against Oracle's serial collector, G1 was 0.57 of its time on akka-uct, 0.78 on reactors and 0.81 on scala-stm-bench7, and lost most of that on one thread: the gain is the threads. Since 2026-10-16, CrucibleVM built with <code>-H:+ParallelYoungCollection</code> copies the young generation on up to nine threads; <code>-XX:ParallelYoungCollectionThreads</code> sets how many. With a profile, against Oracle's binary, in one session of three rounds on 8 processors: 0.827 over the fourteen, where the serial collector is at 0.858; scala-stm-bench7 0.837 against 0.991, akka-uct 0.657 against 0.744 with its peak memory down from 1,831 MB to 1,131, reactors 0.797 against 0.866, scrabble 0.607 against 0.645; none more than 1% slower than on the serial collector, and peak memory the same or lower but on fj-kmeans, 213 MB against 192. The services are level with the serial collector: they spend little time collecting. It passes the native unit tests, with heap verification after every collection too, and more than 150 repeated runs of the benchmarks; it is new, off by default, and not in the 0.1.0 archive: build from source to try it.</p>
+				</div>
+				<div class="caveat">
 					<h3>What 25.4 changed</h3>
 					<p>Control flow duplication, new in 25.4, stays on with a profile: the fourteen gain 0.7% from it, while BranchBench loses 17% and BenchPGO 9%. The collector now prefetches what the objects it copies point to once a collection copies more than 1 MB, and types the run used and never locked drop their monitor slot.</p>
 				</div>
@@ -279,7 +292,7 @@ mx native-image -O3 -cp app.jar -o app-recording \
 						<tr><td>Limits</td><td>Renaissance and the samples: 6 processors and 14 GB. The services: 8 processors and 24 GB, the service on four processors and the load generator (<code>oha</code>, 16 connections) on four others</td></tr>
 						<tr><td>Oracle's side</td><td>Oracle GraalVM 25.0.4 (<code>25.0.4+7-LTS-jvmci-b01</code>), <code>--pgo-instrument</code> then <code>--pgo</code>, which builds at <code>-O3</code></td></tr>
 						<tr><td>CrucibleVM's side</td><td><code>crucible/main</code> on GraalVM Community Edition 25.4.4.1.1 with labs JDK 25, <code>-O3</code>, defaults</td></tr>
-						<tr><td>Collector and heap</td><td>The serial collector in both, each choosing its own heap unless a row says otherwise</td></tr>
+						<tr><td>Collector and heap</td><td>The serial collector in both, each choosing its own heap unless a row says otherwise; the young collection on several threads where it is named, measured with 8 processors and 24 GB</td></tr>
 						<tr><td>Method</td><td>Renaissance 0.16.1, each benchmark as a standalone image: the median iteration after the first third of 10 to 20, five rounds with the binaries taken in turn, and the median of the rounds. Samples: wall time, median of eleven runs in turn. Services: requests a second over 20 s after 10 s of warm-up, median of three rounds</td></tr>
 					</tbody>
 				</table>
