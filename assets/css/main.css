@@ -532,6 +532,11 @@ tr.group th span {
   margin: var(--space-3) 0 0;
 }
 
+.chart-figure a {
+  display: block;
+  cursor: zoom-in;
+}
+
 .chart-figure img {
   display: block;
   width: 100%;
