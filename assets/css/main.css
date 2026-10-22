@@ -527,6 +527,27 @@ tr.group th span {
   }
 }
 
+/* ---------- charts: one image per scheme ---------- */
+.chart-figure {
+  margin: var(--space-3) 0 0;
+}
+
+.chart-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart-figure .chart-dark { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chart-figure .chart-light { display: none; }
+  :root:not([data-theme="light"]) .chart-figure .chart-dark { display: block; }
+}
+
+:root[data-theme="dark"] .chart-figure .chart-light { display: none; }
+:root[data-theme="dark"] .chart-figure .chart-dark { display: block; }
+
 /* ---------- headline figures ---------- */
 .sub-title {
   margin: var(--space-4) 0 var(--space-3);
