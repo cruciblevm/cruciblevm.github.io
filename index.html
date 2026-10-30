@@ -64,11 +64,11 @@
 		<p class="hero-tagline">Open-source profile-guided optimization for <code>native-image</code>.</p>
 		<p class="hero-intro">CrucibleVM is a fork of GraalVM Community Edition. Build your program once so that it records how it runs, run it on a workload that looks like production, and build it again with what it recorded. The second build knows which branches go which way, which methods the time is spent in, and where calls actually land — and compiles accordingly.</p>
 		<p class="hero-links">
-			<a class="button button--primary" href="https://github.com/SiteNetSoft/crucible/releases/tag/v0.2.0">Download 0.2.0</a>
+			<a class="button button--primary" href="https://github.com/SiteNetSoft/crucible/releases/tag/v0.3.0">Download 0.3.0</a>
 			<a class="button" href="https://github.com/SiteNetSoft/crucible">View on GitHub</a>
 			<a class="button" href="https://github.com/SiteNetSoft/crucible/blob/crucible/main/crucible/README.md">Read the docs</a>
 		</p>
-		<p class="hero-note">Linux x86-64, 547 MB, a GraalVM JDK 25 with <code>native-image</code> and the CrucibleVM scripts; it needs <code>gcc</code>, the C library headers, <code>zlib</code> headers and <code>python3</code>. <a href="https://github.com/SiteNetSoft/crucible/releases/tag/v0.2.0">Release notes and checksum</a>.
+		<p class="hero-note">Linux x86-64, 547 MB, a GraalVM JDK 25 with <code>native-image</code> and the CrucibleVM scripts; it needs <code>gcc</code>, the C library headers, <code>zlib</code> headers and <code>python3</code>. <a href="https://github.com/SiteNetSoft/crucible/releases/tag/v0.3.0">Release notes and checksum</a>.
 		</p>
 	</header>
 	<aside class="notice" aria-label="Alpha notice">
@@ -83,7 +83,7 @@
 			<div class="quick-start">
 				<h3>In one command</h3>
 				<pre><code><span class="c"># from the release archive; in a source tree, crucible/pgo.sh</span>
-tar xzf cruciblevm-0.2.0-linux-x86_64.tar.gz
+tar xzf cruciblevm-0.3.0-linux-x86_64.tar.gz
 cruciblevm/crucible/pgo.sh --name app --run '$APP &lt;your workload arguments&gt;' -- -cp app.jar com.example.Main</code></pre>
 				<p>It builds an image that records, runs your workload on it, builds an image that samples call stacks, runs the workload again, and builds <code>./app</code>, the image to ship. In <code>--run</code>, <code>$APP</code> is the image to run; the workload has to let it exit normally, so stop a service with SIGTERM (build it with <code>--install-exit-handlers</code>). <code>--no-samples</code> stops after the counted profile. For Spring PetClinic the whole command takes about a quarter of an hour.</p>
 			</div>
@@ -190,7 +190,7 @@ mx native-image -O3 -cp app.jar -o app-recording \
 				<div>
 					<dt>With the young collection on several threads</dt>
 					<dd><strong>0.827</strong> of Oracle's time</dd>
-					<dd class="stat-note">Opt-in, in 0.2.0; 0.858 with the serial collector in the same session, on 8 processors</dd>
+					<dd class="stat-note">Opt-in in 0.3.0, on by default in the source tree since 2026-10-29; 0.858 with the serial collector in the same session, on 8 processors</dd>
 				</div>
 				<div>
 					<dt>Without a profile, at the default level</dt>
@@ -279,7 +279,7 @@ mx native-image -O3 -cp app.jar -o app-recording \
 				</div>
 				<div class="caveat">
 					<h3>Collecting on several threads</h3>
-					<p>Native Image in the community edition has one collector, and it collects on one thread; Oracle's G1, which needs a library only Oracle GraalVM ships, collects on several. Measured against Oracle's serial collector, G1 was 0.57 of its time on akka-uct, 0.78 on reactors and 0.81 on scala-stm-bench7, and lost most of that on one thread: the gain is the threads. Since 2026-10-16, CrucibleVM built with <code>-H:+ParallelYoungCollection</code> copies the young generation on up to nine threads; <code>-XX:ParallelYoungCollectionThreads</code> sets how many. With a profile, against Oracle's binary, in one session of three rounds on 8 processors: 0.827 over the fourteen, where the serial collector is at 0.858; scala-stm-bench7 0.837 against 0.991, akka-uct 0.657 against 0.744 with its peak memory down from 1,831 MB to 1,131, reactors 0.797 against 0.866, scrabble 0.607 against 0.645; none more than 1% slower than on the serial collector, and peak memory the same or lower; fj-kmeans, at 213 MB against 192 in that session, is level since a fix on 2026-10-17. The services are level with the serial collector: they spend little time collecting. It passes the native unit tests, with heap verification after every collection too, and more than 2,000 repeated benchmark runs; one of them, an akka-uct run, hung, and the cause is not yet found. It is new and off by default; 0.2.0 has it, so build with the option to try it, and set a timeout on long runs.</p>
+					<p>Native Image in the community edition has one collector, and it collects on one thread; Oracle's G1, which needs a library only Oracle GraalVM ships, collects on several. Measured against Oracle's serial collector, G1 was 0.57 of its time on akka-uct, 0.78 on reactors and 0.81 on scala-stm-bench7, and lost most of that on one thread: the gain is the threads. Since 2026-10-16, CrucibleVM built with <code>-H:+ParallelYoungCollection</code> copies the young generation on up to nine threads; <code>-XX:ParallelYoungCollectionThreads</code> sets how many. With a profile, against Oracle's binary, in one session of three rounds on 8 processors: 0.827 over the fourteen, where the serial collector is at 0.858; scala-stm-bench7 0.837 against 0.991, akka-uct 0.657 against 0.744 with its peak memory down from 1,831 MB to 1,131, reactors 0.797 against 0.866, scrabble 0.607 against 0.645; none more than 1% slower than on the serial collector, and peak memory the same or lower; fj-kmeans, at 213 MB against 192 in that session, is level since a fix on 2026-10-17. The services are level with the serial collector: they spend little time collecting. It passes the native unit tests, with heap verification after every collection too, and more than 2,000 repeated benchmark runs; two akka-uct runs hung, one on each collector, and the cause is akka's own: <a href="https://github.com/akka/akka-core/issues/33019">akka/akka-core#33019</a>, a mailbox submitted to the fork-join pool again while another worker is still taking it, and the benchmark hangs the same way on HotSpot. It is off by default in 0.3.0, so build with the option to try it there; in the source tree it is on by default since 2026-10-29, counts a container's processor limit, and stays on one thread on one processor.</p>
 				</div>
 				<div class="caveat">
 					<h3>What 25.4 changed</h3>
@@ -324,7 +324,7 @@ mx native-image -O3 -cp app.jar -o app-recording \
 
 		<section class="section" aria-labelledby="build-title">
 			<h2 class="section-title" id="build-title">Download it, or build it from source</h2>
-			<p class="section-note"><a href="https://github.com/SiteNetSoft/crucible/releases/download/v0.2.0/cruciblevm-0.2.0-linux-x86_64.tar.gz">CrucibleVM 0.2.0 for Linux x86-64</a> is a tar.gz that needs neither <code>mx</code> nor the source tree: unpack it and use <code>cruciblevm/bin/native-image</code> and <code>cruciblevm/crucible/pgo.sh</code>. It was built on Rocky Linux 10; 0.1.0 was checked on Ubuntu 24.04 with only <code>gcc libc6-dev zlib1g-dev python3</code> installed, and 0.2.0 adds the parallel young collector and two run-time options for the serial collector's memory, all off by default. To build it yourself you need <code>mx</code> and a labs JDK 25; <code>crucible/env.sh</code> sets both up, and the first build takes 20 to 60 minutes.</p>
+			<p class="section-note"><a href="https://github.com/SiteNetSoft/crucible/releases/download/v0.3.0/cruciblevm-0.3.0-linux-x86_64.tar.gz">CrucibleVM 0.3.0 for Linux x86-64</a> is a tar.gz that needs neither <code>mx</code> nor the source tree: unpack it and use <code>cruciblevm/bin/native-image</code> and <code>cruciblevm/crucible/pgo.sh</code>. It was built on Rocky Linux 10; 0.1.0 was checked on Ubuntu 24.04 with only <code>gcc libc6-dev zlib1g-dev python3</code> installed, 0.2.0 added the parallel young collector and two run-time options for the serial collector's memory, and 0.3.0 collects the old generation once it holds twice what the last complete collection kept, which brings Spring PetClinic under load from 311 MB to 240 to 280. To build it yourself you need <code>mx</code> and a labs JDK 25; <code>crucible/env.sh</code> sets both up, and the first build takes 20 to 60 minutes.</p>
 			<pre><code>git clone https://github.com/SiteNetSoft/crucible.git &amp;&amp; cd crucible
 source crucible/env.sh
 cd substratevm &amp;&amp; mx build
