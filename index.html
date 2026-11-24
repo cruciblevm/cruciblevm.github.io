@@ -51,6 +51,7 @@
 		})();
 	</script>
 	<script src="assets/js/theme.js" defer></script>
+	<script src="assets/js/programs-chart.js" defer></script>
 </head>
 <body>
 	<button class="theme-toggle" id="theme-toggle" type="button" hidden>
@@ -239,6 +240,244 @@ mx native-image -O3 -cp app.jar -o app-recording \
 			<p class="how-to-read">With a profile, Quarkus serves 6% more requests a second built by CrucibleVM 0.5.0 than by Oracle GraalVM, 15,836 against 14,981, where 0.1.0 was 3% behind, and Spring Boot 30% more, 5,799 against 4,450; without a profile, 14% and 37% more, 10,768 against 9,442 and 4,167 against 3,048. Boot and first response are level: 25 ms for both on Quarkus with a profile, 114 ms against 113 on Spring Boot. Memory after the first request is lower with a profile, 42 MB against 46 on Quarkus and 111 against 115 on Spring Boot, and 18 to 22% higher on both without one, where CrucibleVM's images are <code>-O3</code> builds. The chart does not show memory under load: with a profile CrucibleVM's Quarkus image peaks at 112 MB against Oracle's 154 and its Spring Boot image at 228 MB against 208, both under <code>-Xmx512m</code>.</p>
 			<p class="how-to-read">Out of the box without <code>-Xmx</code>, 90 s at 100 connections, the profiled images come to the same: Quarkus 16,045 requests a second against 15,077 in a peak of 110 MB against 162, Spring Boot 5,579 against 4,476 in 128 MB against 194. A 30-minute soak at 100 connections answers every request on both, with memory flat from the first minute to the last.</p>
 			<p class="fine-print">Measured on the machine below the way Quarkus's lab measures, from its <code>main.yml</code>: its time-to-first-request script; resident memory from <code>pmap</code> 20 s after the start and after the first request; requests a second over 30 s at 100 connections after 2 minutes of warm-up and a 30 s pause; a fresh database for every measurement, Quarkus's PostgreSQL 17 image and settings; three rounds, the runtimes in turn, averaged as Quarkus's charts are. Different from Quarkus's lab: <code>oha</code> in place of Hyperfoil; the application on two cores (four threads), the database on two and the load generator on two, where the lab gives each its own cores of a 64-thread Xeon; the first round's boot time left out, since the image was not yet in the file cache and a native image took 4 to 10 times longer. Quarkus 3.39.4, Spring Boot 4.1.1, <code>-Xmx512m -Xms512m</code> for every runtime and <code>-XX:+UseNUMA</code> on the JVM, CrucibleVM 0.5.0 (<code>c4581a44587</code>) with its defaults, measured 2026-11-17, Oracle GraalVM's images and both profiles as recorded in October. These numbers are not comparable with Quarkus's published ones. The chart is drawn by Quarkus's generator from <a href="https://github.com/quarkusio/benchmarks">quarkusio/benchmarks</a>, with the eight native runtimes added.</p>
+
+			<h3 class="sub-title" id="programs-title">Twenty-one Java programs <span>each built four ways, every binary's output the JVM's</span></h3>
+			<dl class="stats">
+				<div>
+					<dt>Without a profile</dt>
+					<dd><strong>16%</strong> faster than Oracle</dd>
+					<dd class="stat-note">The geometric mean of the 21; ahead on 19, level on Checkstyle, behind on ZXing by 1%</dd>
+				</div>
+				<div>
+					<dt>With a profile</dt>
+					<dd><strong>7%</strong> faster than Oracle</dd>
+					<dd class="stat-note">Ahead on 15, level on jsoup and Log4j, behind on ANTLR, ZXing, PDFBox and Checkstyle by 3 to 5%</dd>
+				</div>
+			</dl>
+			<p class="how-to-read">Libraries and tools as people run them, each on a fixed workload of real input: Java sources, HTML pages, PDFs, YAML, JSON, spreadsheets, archives, geometry. Oracle GraalVM 25.0.4 without a profile and with <code>--pgo</code>, CrucibleVM without a profile and with <code>crucible/pgo.sh</code>, each profile recorded on a different part of the input than the one timed. A bar is how much faster CrucibleVM's binary finished than Oracle's; hover a row for the times.</p>
+<!-- programs-chart:start -->
+<figure class="programs-figure">
+<svg class="programs-chart" viewBox="0 0 744 603" role="img" aria-labelledby="programs-chart-title programs-chart-desc">
+<title id="programs-chart-title">How much faster CrucibleVM ran than Oracle GraalVM on 21 programs</title>
+<desc id="programs-chart-desc">Per cent faster for each program, without a profile on the left and with one on the right; bars to the left of the axis are programs where CrucibleVM was slower. The table below gives every time.</desc>
+<text class="pc-head" x="178" y="16">Without a profile</text>
+<line class="pc-axis" x1="210.8" x2="210.8" y1="34" y2="565"/>
+<text class="pc-tick" x="210.8" y="583" text-anchor="middle">level</text>
+<line class="pc-grid" x1="276.2" x2="276.2" y1="34" y2="565"/>
+<text class="pc-tick" x="276.2" y="583" text-anchor="middle">+20%</text>
+<line class="pc-grid" x1="341.8" x2="341.8" y1="34" y2="565"/>
+<text class="pc-tick" x="341.8" y="583" text-anchor="middle">+40%</text>
+<line class="pc-grid" x1="407.2" x2="407.2" y1="34" y2="565"/>
+<text class="pc-tick" x="407.2" y="583" text-anchor="middle">+60%</text>
+<text class="pc-tick" x="178" y="28">slower ←</text>
+<text class="pc-tick" x="440" y="28" text-anchor="end">→ faster than Oracle</text>
+<text class="pc-head" x="474" y="16">With a profile</text>
+<line class="pc-axis" x1="506.8" x2="506.8" y1="34" y2="565"/>
+<text class="pc-tick" x="506.8" y="583" text-anchor="middle">level</text>
+<line class="pc-grid" x1="572.2" x2="572.2" y1="34" y2="565"/>
+<text class="pc-tick" x="572.2" y="583" text-anchor="middle">+20%</text>
+<line class="pc-grid" x1="637.8" x2="637.8" y1="34" y2="565"/>
+<text class="pc-tick" x="637.8" y="583" text-anchor="middle">+40%</text>
+<line class="pc-grid" x1="703.2" x2="703.2" y1="34" y2="565"/>
+<text class="pc-tick" x="703.2" y="583" text-anchor="middle">+60%</text>
+<text class="pc-tick" x="474" y="28">slower ←</text>
+<text class="pc-tick" x="736" y="28" text-anchor="end">→ faster than Oracle</text>
+<g class="pc-row" style="--d:0ms"><title>PMD 7.29, checks java.base&#x27;s sources with the quickstart rules: Oracle GraalVM 6.6 s and 4.5 s with a profile, CrucibleVM 4.0 s and 3.36 s</title>
+<rect class="pc-hit" x="0" y="40" width="744" height="25"/>
+<text class="pc-name" x="166" y="55" text-anchor="end">PMD 7.29</text>
+<rect class="pc-bar pc-win" x="210.8" y="44" width="212.9" height="13" rx="3"/>
+<text class="pc-value" x="429.6" y="55">+65%</text>
+<rect class="pc-bar pc-win" x="506.8" y="44" width="111.1" height="13" rx="3"/>
+<text class="pc-value" x="623.9" y="55">+34%</text>
+</g>
+<g class="pc-row" style="--d:35ms"><title>Apache POI 5.5, writes and reads back 12 spreadsheets: Oracle GraalVM 7.1 s and 5.8 s with a profile, CrucibleVM 5.65 s and 4.7 s</title>
+<rect class="pc-hit" x="0" y="65" width="744" height="25"/>
+<text class="pc-name" x="166" y="80" text-anchor="end">Apache POI 5.5</text>
+<rect class="pc-bar pc-win" x="210.8" y="69" width="84.0" height="13" rx="3"/>
+<text class="pc-value" x="300.8" y="80">+26%</text>
+<rect class="pc-bar pc-win" x="506.8" y="69" width="76.6" height="13" rx="3"/>
+<text class="pc-value" x="589.4" y="80">+23%</text>
+</g>
+<g class="pc-row" style="--d:70ms"><title>Jackson 2.23, reads and writes three benchmark JSON files: Oracle GraalVM 5.47 s and 4.38 s with a profile, CrucibleVM 4.25 s and 3.63 s</title>
+<rect class="pc-hit" x="0" y="90" width="744" height="25"/>
+<text class="pc-name" x="166" y="105" text-anchor="end">Jackson 2.23</text>
+<rect class="pc-bar pc-win" x="210.8" y="94" width="94.0" height="13" rx="3"/>
+<text class="pc-value" x="310.8" y="105">+29%</text>
+<rect class="pc-bar pc-win" x="506.8" y="94" width="67.7" height="13" rx="3"/>
+<text class="pc-value" x="580.4" y="105">+21%</text>
+</g>
+<g class="pc-row" style="--d:105ms"><title>Commons Compress 1.28, writes and reads tar.gz, tar.bz2 and zip: Oracle GraalVM 14.1 s and 15.5 s with a profile, CrucibleVM 13.2 s and 12.9 s</title>
+<rect class="pc-hit" x="0" y="115" width="744" height="25"/>
+<text class="pc-name" x="166" y="130" text-anchor="end">Commons Compress 1.28</text>
+<rect class="pc-bar pc-win" x="210.8" y="119" width="22.3" height="13" rx="3"/>
+<text class="pc-value" x="239.1" y="130">+7%</text>
+<rect class="pc-bar pc-win" x="506.8" y="119" width="66.0" height="13" rx="3"/>
+<text class="pc-value" x="578.8" y="130">+20%</text>
+</g>
+<g class="pc-row" style="--d:140ms"><title>H2 2.5, runs a 400,000-row SQL script in memory: Oracle GraalVM 7.9 s and 6.65 s with a profile, CrucibleVM 6.75 s and 5.7 s</title>
+<rect class="pc-hit" x="0" y="140" width="744" height="25"/>
+<text class="pc-name" x="166" y="155" text-anchor="end">H2 2.5</text>
+<rect class="pc-bar pc-win" x="210.8" y="144" width="55.8" height="13" rx="3"/>
+<text class="pc-value" x="272.5" y="155">+17%</text>
+<rect class="pc-bar pc-win" x="506.8" y="144" width="54.6" height="13" rx="3"/>
+<text class="pc-value" x="567.3" y="155">+17%</text>
+</g>
+<g class="pc-row" style="--d:175ms"><title>Avro 1.12, encodes and decodes 600,000 records: Oracle GraalVM 9.73 s and 7.91 s with a profile, CrucibleVM 8.33 s and 6.96 s</title>
+<rect class="pc-hit" x="0" y="165" width="744" height="25"/>
+<text class="pc-name" x="166" y="180" text-anchor="end">Avro 1.12</text>
+<rect class="pc-bar pc-win" x="210.8" y="169" width="55.0" height="13" rx="3"/>
+<text class="pc-value" x="271.8" y="180">+17%</text>
+<rect class="pc-bar pc-win" x="506.8" y="169" width="44.7" height="13" rx="3"/>
+<text class="pc-value" x="557.5" y="180">+14%</text>
+</g>
+<g class="pc-row" style="--d:210ms"><title>Rhino 1.9, interprets six Octane benchmarks: Oracle GraalVM 7.4 s and 6.76 s with a profile, CrucibleVM 6.6 s and 5.98 s</title>
+<rect class="pc-hit" x="0" y="190" width="744" height="25"/>
+<text class="pc-name" x="166" y="205" text-anchor="end">Rhino 1.9</text>
+<rect class="pc-bar pc-win" x="210.8" y="194" width="39.7" height="13" rx="3"/>
+<text class="pc-value" x="256.4" y="205">+12%</text>
+<rect class="pc-bar pc-win" x="506.8" y="194" width="42.7" height="13" rx="3"/>
+<text class="pc-value" x="555.5" y="205">+13%</text>
+</g>
+<g class="pc-row" style="--d:245ms"><title>Lucene 10.6, indexes 1,504 sources, runs 300 queries: Oracle GraalVM 3.22 s and 2.25 s with a profile, CrucibleVM 2.46 s and 2.02 s</title>
+<rect class="pc-hit" x="0" y="215" width="744" height="25"/>
+<text class="pc-name" x="166" y="230" text-anchor="end">Lucene 10.6</text>
+<rect class="pc-bar pc-win" x="210.8" y="219" width="101.2" height="13" rx="3"/>
+<text class="pc-value" x="317.9" y="230">+31%</text>
+<rect class="pc-bar pc-win" x="506.8" y="219" width="37.3" height="13" rx="3"/>
+<text class="pc-value" x="550.0" y="230">+11%</text>
+</g>
+<g class="pc-row" style="--d:280ms"><title>SnakeYAML 2.7, loads and dumps 1,405 YAML files: Oracle GraalVM 2.8 s and 2.06 s with a profile, CrucibleVM 2.5 s and 1.93 s</title>
+<rect class="pc-hit" x="0" y="240" width="744" height="25"/>
+<text class="pc-name" x="166" y="255" text-anchor="end">SnakeYAML 2.7</text>
+<rect class="pc-bar pc-win" x="210.8" y="244" width="39.3" height="13" rx="3"/>
+<text class="pc-value" x="256.0" y="255">+12%</text>
+<rect class="pc-bar pc-win" x="506.8" y="244" width="22.1" height="13" rx="3"/>
+<text class="pc-value" x="534.8" y="255">+7%</text>
+</g>
+<g class="pc-row" style="--d:315ms"><title>Gson 2.15, writes and reads 200,000 orders as JSON: Oracle GraalVM 13.4 s and 9.8 s with a profile, CrucibleVM 10.8 s and 9.32 s</title>
+<rect class="pc-hit" x="0" y="265" width="744" height="25"/>
+<text class="pc-name" x="166" y="280" text-anchor="end">Gson 2.15</text>
+<rect class="pc-bar pc-win" x="210.8" y="269" width="78.8" height="13" rx="3"/>
+<text class="pc-value" x="295.6" y="280">+24%</text>
+<rect class="pc-bar pc-win" x="506.8" y="269" width="16.9" height="13" rx="3"/>
+<text class="pc-value" x="529.6" y="280">+5%</text>
+</g>
+<g class="pc-row" style="--d:350ms"><title>Tika 4.2, extracts text from 51 documents: Oracle GraalVM 43.9 s and 41.6 s with a profile, CrucibleVM 41.5 s and 39.95 s</title>
+<rect class="pc-hit" x="0" y="290" width="744" height="25"/>
+<text class="pc-name" x="166" y="305" text-anchor="end">Tika 4.2</text>
+<rect class="pc-bar pc-win" x="210.8" y="294" width="18.9" height="13" rx="3"/>
+<text class="pc-value" x="235.7" y="305">+6%</text>
+<rect class="pc-bar pc-win" x="506.8" y="294" width="13.5" height="13" rx="3"/>
+<text class="pc-value" x="526.3" y="305">+4%</text>
+</g>
+<g class="pc-row" style="--d:385ms"><title>JavaParser 3.28, parses and reprints 1,504 sources: Oracle GraalVM 7.7 s and 5.0 s with a profile, CrucibleVM 6.4 s and 4.9 s</title>
+<rect class="pc-hit" x="0" y="315" width="744" height="25"/>
+<text class="pc-name" x="166" y="330" text-anchor="end">JavaParser 3.28</text>
+<rect class="pc-bar pc-win" x="210.8" y="319" width="66.5" height="13" rx="3"/>
+<text class="pc-value" x="283.3" y="330">+20%</text>
+<rect class="pc-bar pc-win" x="506.8" y="319" width="6.7" height="13" rx="3"/>
+<text class="pc-value" x="519.4" y="330">+2%</text>
+</g>
+<g class="pc-row" style="--d:420ms"><title>FreeMarker 2.3, renders three templates 1,500 times: Oracle GraalVM 8.6 s and 6.65 s with a profile, CrucibleVM 7.6 s and 6.54 s</title>
+<rect class="pc-hit" x="0" y="340" width="744" height="25"/>
+<text class="pc-name" x="166" y="355" text-anchor="end">FreeMarker 2.3</text>
+<rect class="pc-bar pc-win" x="210.8" y="344" width="43.1" height="13" rx="3"/>
+<text class="pc-value" x="259.8" y="355">+13%</text>
+<rect class="pc-bar pc-win" x="506.8" y="344" width="5.5" height="13" rx="3"/>
+<text class="pc-value" x="518.3" y="355">+2%</text>
+</g>
+<g class="pc-row" style="--d:455ms"><title>Commons Math 3.6, solves, decomposes, integrates and fits: Oracle GraalVM 6.86 s and 5.15 s with a profile, CrucibleVM 5.48 s and 5.07 s</title>
+<rect class="pc-hit" x="0" y="365" width="744" height="25"/>
+<text class="pc-name" x="166" y="380" text-anchor="end">Commons Math 3.6</text>
+<rect class="pc-bar pc-win" x="210.8" y="369" width="82.5" height="13" rx="3"/>
+<text class="pc-value" x="299.2" y="380">+25%</text>
+<rect class="pc-bar pc-win" x="506.8" y="369" width="5.2" height="13" rx="3"/>
+<text class="pc-value" x="517.9" y="380">+2%</text>
+</g>
+<g class="pc-row" style="--d:490ms"><title>JTS 1.20, buffers, unions and intersects 20,000 polygons: Oracle GraalVM 1.81 s and 1.5 s with a profile, CrucibleVM 1.63 s and 1.49 s</title>
+<rect class="pc-hit" x="0" y="390" width="744" height="25"/>
+<text class="pc-name" x="166" y="405" text-anchor="end">JTS 1.20</text>
+<rect class="pc-bar pc-win" x="210.8" y="394" width="36.2" height="13" rx="3"/>
+<text class="pc-value" x="252.9" y="405">+11%</text>
+<rect class="pc-bar pc-win" x="506.8" y="394" width="2.2" height="13" rx="3"/>
+<text class="pc-value" x="514.9" y="405">+1%</text>
+</g>
+<g class="pc-row" style="--d:525ms"><title>Log4j 2.26, writes two million log lines: Oracle GraalVM 3.84 s and 2.99 s with a profile, CrucibleVM 3.66 s and 3.0 s</title>
+<rect class="pc-hit" x="0" y="415" width="744" height="25"/>
+<text class="pc-name" x="166" y="430" text-anchor="end">Log4j 2.26</text>
+<rect class="pc-bar pc-win" x="210.8" y="419" width="16.1" height="13" rx="3"/>
+<text class="pc-value" x="232.9" y="430">+5%</text>
+<rect class="pc-bar pc-level pc-neg" x="505.7" y="419" width="1.5" height="13" rx="3"/>
+<text class="pc-value" x="499.7" y="430" text-anchor="end">level</text>
+</g>
+<g class="pc-row" style="--d:560ms"><title>jsoup 1.24, parses and cleans 3,834 HTML pages: Oracle GraalVM 12.2 s and 8.81 s with a profile, CrucibleVM 11.1 s and 8.84 s</title>
+<rect class="pc-hit" x="0" y="440" width="744" height="25"/>
+<text class="pc-name" x="166" y="455" text-anchor="end">jsoup 1.24</text>
+<rect class="pc-bar pc-win" x="210.8" y="444" width="32.5" height="13" rx="3"/>
+<text class="pc-value" x="249.2" y="455">+10%</text>
+<rect class="pc-bar pc-level pc-neg" x="505.6" y="444" width="1.5" height="13" rx="3"/>
+<text class="pc-value" x="499.6" y="455" text-anchor="end">level</text>
+</g>
+<g class="pc-row" style="--d:595ms"><title>ANTLR 4.13, generates parsers for 12 grammars: Oracle GraalVM 8.6 s and 5.84 s with a profile, CrucibleVM 7.56 s and 6.0 s</title>
+<rect class="pc-hit" x="0" y="465" width="744" height="25"/>
+<text class="pc-name" x="166" y="480" text-anchor="end">ANTLR 4.13</text>
+<rect class="pc-bar pc-win" x="210.8" y="469" width="45.1" height="13" rx="3"/>
+<text class="pc-value" x="261.8" y="480">+14%</text>
+<rect class="pc-bar pc-loss pc-neg" x="498.0" y="469" width="8.7" height="13" rx="3"/>
+<text class="pc-value" x="492.0" y="480" text-anchor="end">−3%</text>
+</g>
+<g class="pc-row" style="--d:630ms"><title>ZXing 3.5, encodes and decodes 24,000 QR and Aztec codes: Oracle GraalVM 8.8 s and 7.45 s with a profile, CrucibleVM 8.86 s and 7.69 s</title>
+<rect class="pc-hit" x="0" y="490" width="744" height="25"/>
+<text class="pc-name" x="166" y="505" text-anchor="end">ZXing 3.5</text>
+<rect class="pc-bar pc-loss pc-neg" x="208.5" y="494" width="2.2" height="13" rx="3"/>
+<text class="pc-value" x="202.5" y="505" text-anchor="end">−1%</text>
+<rect class="pc-bar pc-loss pc-neg" x="496.5" y="494" width="10.2" height="13" rx="3"/>
+<text class="pc-value" x="490.5" y="505" text-anchor="end">−3%</text>
+</g>
+<g class="pc-row" style="--d:665ms"><title>PDFBox 3.0, makes 20 PDFs, merges them, extracts the text: Oracle GraalVM 1.36 s and 1.19 s with a profile, CrucibleVM 1.3 s and 1.25 s</title>
+<rect class="pc-hit" x="0" y="515" width="744" height="25"/>
+<text class="pc-name" x="166" y="530" text-anchor="end">PDFBox 3.0</text>
+<rect class="pc-bar pc-win" x="210.8" y="519" width="15.1" height="13" rx="3"/>
+<text class="pc-value" x="231.9" y="530">+5%</text>
+<rect class="pc-bar pc-loss pc-neg" x="491.0" y="519" width="15.7" height="13" rx="3"/>
+<text class="pc-value" x="485.0" y="530" text-anchor="end">−5%</text>
+</g>
+<g class="pc-row" style="--d:700ms"><title>Checkstyle 14.4, checks 946 files of java.base: Oracle GraalVM 88.5 s and 59.5 s with a profile, CrucibleVM 88.9 s and 62.7 s</title>
+<rect class="pc-hit" x="0" y="540" width="744" height="25"/>
+<text class="pc-name" x="166" y="555" text-anchor="end">Checkstyle 14.4</text>
+<rect class="pc-bar pc-level pc-neg" x="209.3" y="544" width="1.5" height="13" rx="3"/>
+<text class="pc-value" x="203.3" y="555" text-anchor="end">level</text>
+<rect class="pc-bar pc-loss pc-neg" x="490.0" y="544" width="16.7" height="13" rx="3"/>
+<text class="pc-value" x="484.0" y="555" text-anchor="end">−5%</text>
+</g>
+</svg>
+</figure>
+<details class="programs-table"><summary>Every time, in seconds</summary><div class="table-wrap"><table>
+<thead><tr><th scope="col">Program</th><th scope="col">What it does</th><th scope="col" class="num">Oracle</th><th scope="col" class="num">CrucibleVM</th><th scope="col" class="num">Oracle, profile</th><th scope="col" class="num">CrucibleVM, profile</th></tr></thead><tbody>
+<tr><td>PMD 7.29</td><td>checks java.base&#x27;s sources with the quickstart rules</td><td class="num">6.6</td><td class="num">4.0</td><td class="num">4.5</td><td class="num">3.36</td></tr>
+<tr><td>H2 2.5</td><td>runs a 400,000-row SQL script in memory</td><td class="num">7.9</td><td class="num">6.75</td><td class="num">6.65</td><td class="num">5.7</td></tr>
+<tr><td>PDFBox 3.0</td><td>makes 20 PDFs, merges them, extracts the text</td><td class="num">1.36</td><td class="num">1.3</td><td class="num">1.19</td><td class="num">1.25</td></tr>
+<tr><td>ANTLR 4.13</td><td>generates parsers for 12 grammars</td><td class="num">8.6</td><td class="num">7.56</td><td class="num">5.84</td><td class="num">6.0</td></tr>
+<tr><td>Rhino 1.9</td><td>interprets six Octane benchmarks</td><td class="num">7.4</td><td class="num">6.6</td><td class="num">6.76</td><td class="num">5.98</td></tr>
+<tr><td>Checkstyle 14.4</td><td>checks 946 files of java.base</td><td class="num">88.5</td><td class="num">88.9</td><td class="num">59.5</td><td class="num">62.7</td></tr>
+<tr><td>SnakeYAML 2.7</td><td>loads and dumps 1,405 YAML files</td><td class="num">2.8</td><td class="num">2.5</td><td class="num">2.06</td><td class="num">1.93</td></tr>
+<tr><td>jsoup 1.24</td><td>parses and cleans 3,834 HTML pages</td><td class="num">12.2</td><td class="num">11.1</td><td class="num">8.81</td><td class="num">8.84</td></tr>
+<tr><td>Tika 4.2</td><td>extracts text from 51 documents</td><td class="num">43.9</td><td class="num">41.5</td><td class="num">41.6</td><td class="num">39.95</td></tr>
+<tr><td>Lucene 10.6</td><td>indexes 1,504 sources, runs 300 queries</td><td class="num">3.22</td><td class="num">2.46</td><td class="num">2.25</td><td class="num">2.02</td></tr>
+<tr><td>Jackson 2.23</td><td>reads and writes three benchmark JSON files</td><td class="num">5.47</td><td class="num">4.25</td><td class="num">4.38</td><td class="num">3.63</td></tr>
+<tr><td>JavaParser 3.28</td><td>parses and reprints 1,504 sources</td><td class="num">7.7</td><td class="num">6.4</td><td class="num">5.0</td><td class="num">4.9</td></tr>
+<tr><td>Apache POI 5.5</td><td>writes and reads back 12 spreadsheets</td><td class="num">7.1</td><td class="num">5.65</td><td class="num">5.8</td><td class="num">4.7</td></tr>
+<tr><td>FreeMarker 2.3</td><td>renders three templates 1,500 times</td><td class="num">8.6</td><td class="num">7.6</td><td class="num">6.65</td><td class="num">6.54</td></tr>
+<tr><td>Log4j 2.26</td><td>writes two million log lines</td><td class="num">3.84</td><td class="num">3.66</td><td class="num">2.99</td><td class="num">3.0</td></tr>
+<tr><td>ZXing 3.5</td><td>encodes and decodes 24,000 QR and Aztec codes</td><td class="num">8.8</td><td class="num">8.86</td><td class="num">7.45</td><td class="num">7.69</td></tr>
+<tr><td>Commons Compress 1.28</td><td>writes and reads tar.gz, tar.bz2 and zip</td><td class="num">14.1</td><td class="num">13.2</td><td class="num">15.5</td><td class="num">12.9</td></tr>
+<tr><td>JTS 1.20</td><td>buffers, unions and intersects 20,000 polygons</td><td class="num">1.81</td><td class="num">1.63</td><td class="num">1.5</td><td class="num">1.49</td></tr>
+<tr><td>Gson 2.15</td><td>writes and reads 200,000 orders as JSON</td><td class="num">13.4</td><td class="num">10.8</td><td class="num">9.8</td><td class="num">9.32</td></tr>
+<tr><td>Avro 1.12</td><td>encodes and decodes 600,000 records</td><td class="num">9.73</td><td class="num">8.33</td><td class="num">7.91</td><td class="num">6.96</td></tr>
+<tr><td>Commons Math 3.6</td><td>solves, decomposes, integrates and fits</td><td class="num">6.86</td><td class="num">5.48</td><td class="num">5.15</td><td class="num">5.07</td></tr>
+</tbody></table></div></details>
+<!-- programs-chart:end -->
+			<p class="fine-print">Wall time of the whole process, the median of five rounds on eight processors of the machine below; the times on one processor agree within a few per cent. CrucibleVM 0.5.0 and its main branch, measured from 2026-11-22 to 2026-11-24; the four programs found behind or broken on 0.5.0 (jsoup, Tika, PMD, Checkstyle) are shown as fixed on main. Each binary's output was compared byte for byte with the JVM's, except POI's workbooks, whose sizes differ by the creation time they carry. SpotBugs could not be built by either builder.</p>
 
 			<h3 class="sub-title">Renaissance <span>from sampled stacks, the median of three sessions</span></h3>
 			<div class="table-wrap">
