@@ -645,3 +645,35 @@ tr.group th span {
   color: var(--color-muted);
   font-size: 0.9375rem;
 }
+
+/* Real-programs chart (tools/programs-chart.py writes it inline). The bar colours are the win and loss pair stepped
+   and checked for each surface; direction and the signed label carry the same meaning for colour-blind readers. */
+.programs-figure { margin: 1.25rem 0 0.75rem; }
+.programs-chart { width: 100%; height: auto; display: block; font-family: var(--font-body); --pc-win: #1d8a58; --pc-loss: #b4520c; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .programs-chart { --pc-win: #2f9a68; --pc-loss: #d07a30; }
+}
+:root[data-theme="dark"] .programs-chart { --pc-win: #2f9a68; --pc-loss: #d07a30; }
+.programs-chart .pc-head { font-size: 13px; font-weight: 600; fill: var(--color-text); }
+.programs-chart .pc-name { font-size: 12px; fill: var(--color-text); }
+.programs-chart .pc-value { font-size: 11px; fill: var(--color-muted); font-variant-numeric: tabular-nums; }
+.programs-chart .pc-tick { font-size: 11px; fill: var(--color-muted); }
+.programs-chart .pc-grid { stroke: var(--color-line); stroke-width: 1; }
+.programs-chart .pc-axis { stroke: var(--color-muted); stroke-width: 1.5; }
+.programs-chart .pc-hit { fill: transparent; }
+.programs-chart .pc-row:hover .pc-hit { fill: var(--color-code); }
+.programs-chart .pc-win { fill: var(--pc-win); }
+.programs-chart .pc-loss { fill: var(--pc-loss); }
+.programs-chart .pc-level { fill: var(--color-muted); }
+.programs-chart .pc-bar { transform-box: fill-box; transform-origin: left center; }
+.programs-chart .pc-bar.pc-neg { transform-origin: right center; }
+/* assets/js/programs-chart.js adds .will-animate, then .in-view when the chart scrolls in; without script the bars just show. */
+.programs-chart.will-animate .pc-bar { transform: scaleX(0); }
+.programs-chart.will-animate .pc-value { opacity: 0; }
+.programs-chart.in-view .pc-bar { transform: scaleX(1); transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--d, 0ms); }
+.programs-chart.in-view .pc-value { opacity: 1; transition: opacity 0.4s ease calc(var(--d, 0ms) + 0.5s); }
+.programs-table { margin: 0.5rem 0 1rem; }
+.programs-table summary { cursor: pointer; color: var(--color-muted); }
+@media (prefers-reduced-motion: reduce) {
+  .programs-chart.will-animate .pc-bar, .programs-chart.will-animate .pc-value { transform: none; opacity: 1; transition: none; }
+}
